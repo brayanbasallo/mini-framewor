@@ -1,23 +1,41 @@
 class PlatziReactive {
+    //dependencias
+    deps = new Map();
+
     constructor(options) {
         this.origen = options.data()
-
-
+        const self = this;
         //destino
         this.$data = new Proxy(this.origen, {
             get(target, name) {
-                if (Reflect.has(target, name)){
+                if (Reflect.has(target, name)) {
                     // return target[name]
-                    Reflect.get(target, name)
+                    self.track(target, name)
+                    return Reflect.get(target, name)
                 }
                 console.error(`La propiedad ${name} no existe`)
                 return ""
             },
             set(target, name, value){
-                console.log(target, name , value)
-
+                Reflect.set(target, name, value)
+                self.trigger(name)
             }
         })
+    }
+
+    track(target, name) {
+        if (!this.deps.has(name)) {
+            const EFFECT = () => {
+                document.querySelectorAll(`*[p-text=${name}]`).forEach(el => {
+                    this.pText(el, target, name)
+                })
+            }
+            this.deps.set(name, EFFECT)
+        }
+    }
+    trigger(name) {
+        const EFFECT = this.deps.get(name)
+        EFFECT()
     }
 
     mount(){
